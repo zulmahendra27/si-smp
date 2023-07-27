@@ -1,0 +1,624 @@
+<?php if ($_SESSION['level'] == 'guru') {
+  $queryGuru = select($c, 'users a', ['join' => 'INNER JOIN guru b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+  $dataGuru = mysqli_fetch_assoc($queryGuru);
+} elseif ($_SESSION['level'] == 'wali') {
+  $queryWali = select($c, 'users a', ['join' => 'INNER JOIN wali b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+  $dataWali = mysqli_fetch_assoc($queryWali);
+} elseif ($_SESSION['level'] == 'siswa') {
+  $querySiswa = select($c, 'users a', ['join' => 'INNER JOIN siswa b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+  $dataSiswa = mysqli_fetch_assoc($querySiswa);
+} ?>
+
+<div class="page-header">
+  <div class="row align-items-end">
+    <div class="col-lg-12 d-flex align-items-center justify-content-between">
+      <div class="page-header-title d-flex align-items-center">
+        <i class="ik ik-file-text bg-blue"></i>
+        <div class="d-inline">
+          <h5 class="mb-0">Laporan</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <?php if (in_array($_SESSION['level'], ['admin', 'guru', 'kepsek'])) : ?>
+      <div class="card-body mb-0">
+        <div class="d-flex" style="gap: 20px; flex-wrap: wrap">
+          <?php if (in_array($_SESSION['level'], ['admin', 'kepsek'])) : ?>
+          <a href="laporan/laporan.php?p=guru" target="_blank" class="btn btn-primary">Laporan Data Guru</a>
+          <?php endif;
+            if (in_array($_SESSION['level'], ['admin', 'kepsek', 'guru'])) : ?>
+          <a href="laporan/laporan.php?p=siswa" target="_blank" class="btn btn-primary">Laporan Data Siswa</a>
+          <?php endif;
+            if (in_array($_SESSION['level'], ['admin', 'kepsek'])) : ?>
+          <a href="laporan/laporan.php?p=wali" target="_blank" class="btn btn-primary">Laporan Data Wali</a>
+          <?php endif;
+            if (in_array($_SESSION['level'], ['admin', 'kepsek'])) : ?>
+          <a href="laporan/laporan.php?p=rombel" target="_blank" class="btn btn-primary">Laporan Data Rombel</a>
+          <?php endif;
+            if (in_array($_SESSION['level'], ['admin', 'kepsek'])) : ?>
+          <a href="laporan/laporan.php?p=mapel" target="_blank" class="btn btn-primary">Laporan Data Mapel</a>
+          <?php endif;
+            if (in_array($_SESSION['level'], ['admin', 'kepsek', 'guru'])) : ?>
+          <a href="laporan/laporan.php?p=pengampu" target="_blank" class="btn btn-primary">Laporan Data Pengampu
+            Mapel</a>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <?php $col = in_array($_SESSION['level'], ['admin', 'kepsek']) ? '3' : '4' ?>
+
+      <div class="card-body pt-1">
+        <div class="row">
+          <?php if (in_array($_SESSION['level'], ['wali', 'siswa', 'admin', 'kepsek'])) : ?>
+          <div class="col-lg-4">
+            <h6 class="font-weight-bold">Laporan E Rapor</h6>
+            <form action="laporan/laporan.php?p=e_rapor" method="post" target="_blank">
+              <?php if ($_SESSION['level'] != 'siswa') : ?>
+              <div class="row">
+
+                <div class="col-lg-12 form-group">
+                  <?php
+                      if ($_SESSION['level'] == 'wali') {
+                        $queryWali = select($c, 'users a', ['join' => 'INNER JOIN wali b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+                        $dataWali = mysqli_fetch_assoc($queryWali);
+
+                        $querySiswa = select($c, 'siswa', ['where' => "id_wali=" . $dataWali['id_wali']]);
+                      } elseif ($_SESSION['level'] == 'admin' || $_SESSION['level'] == 'kepsek') {
+                        $querySiswa = select($c, 'siswa');
+                      } else {
+                        $querySiswa = select($c, 'siswa', ['where' => "id_rombel=$rombel"]);
+                      }
+
+                      ?>
+                  <label for="siswa_erapor">Pilih Siswa</label>
+                  <select name="id_siswa_erapor" id="siswa_erapor" class="form-control">
+                    <?php if ($querySiswa->num_rows > 0) : foreach ($querySiswa as $data) : ?>
+                    <option value="<?= $data['id_siswa'] ?>">
+                      <?= $data['nama_siswa'] ?></option>
+                    <?php endforeach;
+                        else : ?>
+                    <option value="-1">-- Tidak ada data --</option>
+                    <?php endif; ?>
+                  </select>
+                </div>
+
+              </div>
+              <?php endif; ?>
+              <div class="row">
+                <div class="col-lg-12">
+                  <button type="submit" name="laporan_erapor" class="btn btn-primary btn-block">Laporan E Rapor</button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <?php endif; ?>
+          <?php if (in_array($_SESSION['level'], ['admin', 'kepsek', 'guru'])) : ?>
+          <div class="col-lg-4">
+            <h6 class="font-weight-bold">Laporan Rangking</h6>
+            <form action="laporan/laporan.php?p=rangking" method="post" target="_blank">
+              <div class="row">
+                <div class="col-lg-12 form-group">
+                  <?php
+                    if ($_SESSION['level'] == 'admin' || $_SESSION['level'] == 'kepsek') {
+                      $queryRombel = select($c, 'rombel');
+                    } elseif ($_SESSION['level'] == 'guru') {
+                      $join = "INNER JOIN pengampu b ON a.id_rombel=b.id_rombel";
+                      $where = "b.id_guru=" . $dataGuru['id_guru'];
+                      $queryRombel = select($c, 'rombel a', ['where' => $where, 'join' => $join, 'select' => 'DISTINCT(b.id_rombel), a.*']);
+                    }
+                    ?>
+                  <label for="rombel_rangking">Pilih Rombel</label>
+                  <select name="id_rombel_rangking" id="rombel_rangking" class="form-control">
+                    <?php if ($queryRombel->num_rows > 0) : foreach ($queryRombel as $data) : ?>
+                    <option value="<?= $data['id_rombel'] ?>"><?= $data['nama_rombel'] ?></option>
+                    <?php endforeach;
+                      else : ?>
+                    <option value="-1">-- Tidak ada data --</option>
+                    <?php endif ?>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-12">
+                  <button type="submit" name="laporan_rangking" class="btn btn-primary btn-block">Laporan
+                    Rangking</button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <?php endif; ?>
+
+        </div>
+        <?php
+        if (!in_array($_SESSION['level'], ['wali'])) : ?>
+        <h6 class="font-weight-bold mt-4">Laporan Penilaian Per Siswa</h6>
+        <form action="laporan/laporan.php?p=penilaian" method="post" target="_blank">
+          <?php /* if ($_SESSION['level'] != 'siswa') : */ ?>
+          <div class="row">
+            <?php if (!in_array($_SESSION['level'], ['wali', 'siswa'])) : ?>
+            <div class="col-lg-<?= $col ?> form-group">
+              <?php
+                  $queryRombel = select($c, 'rombel');
+                  if (!isset($_GET['r'])) {
+                    if ($queryRombel->num_rows > 0) {
+                      $rombel = mysqli_fetch_assoc($queryRombel)['id_rombel'];
+                    } else {
+                      $rombel = -1;
+                    }
+                  } else {
+                    $rombel = mysqli_escape_string($c, htmlspecialchars($_GET['r']));
+                  }
+                  ?>
+              <label for="rombel">Pilih Rombel</label>
+              <select name="rombel" id="rombel" class="form-control"
+                onchange="changeRombel<?= in_array($_SESSION['level'], ['admin', 'kepsek']) ? 'Admin' : 'Mapel' ?>(event)">
+                <option value="-1">-- Pilih data --</option>
+                <?php if ($queryRombel->num_rows > 0) : foreach ($queryRombel as $data) : ?>
+                <option value="<?= $data['id_rombel'] ?>"><?= $data['nama_rombel'] ?></option>
+                <?php endforeach;
+                    else : ?>
+                <option value="-1">-- Tidak ada data --</option>
+                <?php endif ?>
+              </select>
+            </div>
+
+            <div class="col-lg-<?= $col ?> form-group">
+              <label for="mapel">Pilih Mapel</label>
+              <select name="id_mapel" id="mapel" class="form-control" onchange="changeMapel(event)">
+                <option value="-1">-- Tidak ada data --</option>
+              </select>
+            </div>
+
+            <div class="col-lg-<?= $col ?> form-group">
+              <label for="jenisnilai">Pilih Jenis Penilaian</label>
+              <select name="id_jenisnilai" id="jenisnilai" class="form-control">
+                <option value="-1">-- Tidak ada data --</option>
+              </select>
+            </div>
+
+            <?php endif;
+              if (!in_array($_SESSION['level'], ['guru', 'siswa'])) : ?>
+
+            <div class="col-lg-<?= $col ?> form-group">
+              <label for="siswa">Pilih Siswa</label>
+              <select name="id_siswa" id="siswa" class="form-control"
+                <?= $_SESSION['level'] == 'wali' ? 'onchange="changeSiswaInWali(event)"' : '' ?>>
+                <option value="-1">-- Tidak ada data --</option>
+                <?php
+                    if ($_SESSION['level'] == 'wali') :
+                      $queryWali = select($c, 'users a', ['join' => 'INNER JOIN wali b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+                      $dataWali = mysqli_fetch_assoc($queryWali);
+
+                      $join = "INNER JOIN wali b ON a.id_wali=b.id_wali";
+                      $where = "b.id_wali=" . $dataWali['id_wali'];
+                      $querySiswa = select($c, 'siswa a', ['join' => $join, 'where' => $where]);
+
+                      if ($querySiswa->num_rows > 0) :
+                        foreach ($querySiswa as $dataSiswa) :
+                    ?>
+                <option value="<?= $dataSiswa['id_siswa'] ?>"><?= $dataSiswa['nama_siswa'] ?></option>
+                <?php endforeach;
+                      endif;
+                    endif; ?>
+              </select>
+            </div>
+            <?php endif;
+              if (in_array($_SESSION['level'], ['siswa'])) : ?>
+            <div class="col-lg-<?= $col ?> form-group">
+              <label for="mapelWali">Pilih Mapel</label>
+              <select name="id_mapel3" id="mapelWali" class="form-control">
+                <?php
+                    if ($_SESSION['level'] == 'siswa') :
+                      $querySiswa = select($c, 'users a', ['join' => 'INNER JOIN siswa b ON a.id_user=b.id_user', 'where' => "a.username='" . $_SESSION['username'] . "'"]);
+                      $dataSiswa = mysqli_fetch_assoc($querySiswa);
+
+                      $whereSiswa = "id_siswa=" . $dataSiswa['id_siswa'];
+
+                      $querySiswa = select($c, 'siswa', ['where' => $whereSiswa]);
+                      $id_rombel = $querySiswa->num_rows > 0 ? mysqli_fetch_assoc($querySiswa)['id_rombel'] : -1;
+
+                      $joinMapel = "INNER JOIN pengampu b ON a.id_mapel=b.id_mapel";
+                      $whereMapel = "b.id_rombel=$id_rombel";
+
+                      $queryMapel = select($c, 'mapel a', ['where' => $whereMapel, 'join' => $joinMapel]);
+                    ?>
+                <?php if ($queryMapel->num_rows > 0) : foreach ($queryMapel as $data) : ?>
+                <option value="<?= $data['id_mapel'] ?>"><?= $data['nama_mapel'] ?></option>
+                <?php endforeach;
+                      else : ?>
+                <option value="-1">-- Tidak ada data --</option>
+                <?php endif; ?>
+                <?php else : ?>
+                <option value="-1">-- Tidak ada data --</option>
+                <?php endif; ?>
+              </select>
+            </div>
+            <?php endif; ?>
+          </div>
+          <?php /* endif; */ ?>
+          <div class="row">
+            <?php if (in_array($_SESSION['level'], ['guru', 'admin', 'kepsek'])) : ?>
+            <div class="col-lg-4">
+              <button type="submit" name="laporan_permapel" class="btn btn-primary btn-block">Laporan Penilaian Per
+                Mapel</button>
+            </div>
+            <?php endif;
+              if (in_array($_SESSION['level'], ['siswa', 'wali', 'admin', 'kepsek'])) : ?>
+            <div class="col-lg-4">
+              <button type="submit" name="laporan_persiswa" class="btn btn-primary btn-block">Laporan Penilaian Per
+                Siswa</button>
+            </div>
+            <?php endif; ?>
+          </div>
+        </form>
+        <?php endif; ?>
+        <?php if (in_array($_SESSION['level'], ['wali', 'siswa'])) : ?>
+        <h6 class="font-weight-bold mt-4">Laporan Absensi Per Bulan</h6>
+        <form action="laporan/laporan.php?p=absensi" method="post" target="_blank">
+          <div class="row">
+            <?php if (in_array($_SESSION['level'], ['wali'])) : ?>
+            <div class="col-lg-4 form-group">
+              <label for="siswa2">Pilih Siswa</label>
+              <select name="id_siswa2" id="siswa2" class="form-control">
+                <?php
+                    $where = "id_wali=" . $dataWali['id_wali'];
+                    $queryDataSiswa = select($c, 'siswa', ['where' => $where]);
+
+                    foreach ($queryDataSiswa as $newDataSiswa) :
+                    ?>
+                <option value="<?= $newDataSiswa['id_siswa'] ?>"><?= $newDataSiswa['nama_siswa'] ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <?php endif; ?>
+            <div class="col-lg-4 form-group">
+              <label for="bulan">Bulan</label>
+              <select name="bulan" id="bulan" class="form-control">
+                <option value="01" <?= date('m') == '01' ? 'selected' : '' ?>>Januari</option>
+                <option value="02" <?= date('m') == '02' ? 'selected' : '' ?>>Februari</option>
+                <option value="03" <?= date('m') == '03' ? 'selected' : '' ?>>Maret</option>
+                <option value="04" <?= date('m') == '04' ? 'selected' : '' ?>>April</option>
+                <option value="05" <?= date('m') == '05' ? 'selected' : '' ?>>Mei</option>
+                <option value="06" <?= date('m') == '06' ? 'selected' : '' ?>>Juni</option>
+                <option value="07" <?= date('m') == '07' ? 'selected' : '' ?>>Juli</option>
+                <option value="08" <?= date('m') == '08' ? 'selected' : '' ?>>Agustus</option>
+                <option value="09" <?= date('m') == '09' ? 'selected' : '' ?>>September</option>
+                <option value="10" <?= date('m') == '10' ? 'selected' : '' ?>>Oktober</option>
+                <option value="11" <?= date('m') == '11' ? 'selected' : '' ?>>November</option>
+                <option value="12" <?= date('m') == '12' ? 'selected' : '' ?>>Desember</option>
+              </select>
+            </div>
+            <div class="col-lg-4 form-group">
+              <label for="tahun">Tahun</label>
+              <select name="tahun" id="tahun" class="form-control">
+                <?php
+                  for ($i = (intval(date('Y')) - 2); $i < (intval(date('Y')) + 3); $i++) :
+                  ?>
+                <option <?= date('Y') == $i ? 'selected' : '' ?> value="<?= $i ?>"><?= $i ?></option>
+                <?php endfor; ?>
+              </select>
+            </div>
+          </div>
+          <div class="col-lg-4 pl-0">
+            <button type="submit" name="absensi_perbulan" class="btn btn-primary btn-block">Laporan Absensi Per
+              Bulan</button>
+          </div>
+        </form>
+        <?php else : ?>
+        <h6 class="font-weight-bold mt-4">Laporan Absensi Per Tanggal</h6>
+        <form action="laporan/laporan.php?p=absensi" method="post" target="_blank">
+          <div class="row">
+            <div class="col-lg-4 form-group">
+              <?php
+                if ($_SESSION['level'] == 'admin' || $_SESSION['level'] == 'kepsek') {
+                  $queryRombel = select($c, 'rombel');
+                } elseif ($_SESSION['level'] == 'guru') {
+                  $join = "INNER JOIN pengampu b ON a.id_rombel=b.id_rombel";
+                  $where = "b.id_guru=" . $dataGuru['id_guru'];
+                  $queryRombel = select($c, 'rombel a', ['where' => $where, 'join' => $join, 'select' => 'DISTINCT(b.id_rombel), a.*']);
+                }
+                ?>
+              <label for="rombel2">Pilih Rombel</label>
+              <select name="id_rombel2" id="rombel2" class="form-control" onchange="changeRombelAbsensi(event)">
+                <option value="-1">-- Pilih data --</option>
+                <?php if ($queryRombel->num_rows > 0) : foreach ($queryRombel as $data) : ?>
+                <option value="<?= $data['id_rombel'] ?>"><?= $data['nama_rombel'] ?></option>
+                <?php endforeach;
+                  else : ?>
+                <option value="-1">-- Tidak ada data --</option>
+                <?php endif ?>
+              </select>
+            </div>
+            <div class="col-lg-4 form-group">
+              <label for="mapel2">Pilih Mapel</label>
+              <select name="id_mapel2" id="mapel2" class="form-control">
+                <option value="-1">-- Tidak ada data --</option>
+              </select>
+            </div>
+            <div class="col-lg-4 form-group">
+              <label for="tanggal">Tanggal</label>
+              <input type="date" id="tanggal" name="tanggal" class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="col-lg-4">
+              <button type="submit" name="absensi_pertanggal" class="btn btn-primary btn-block">Laporan Absensi Per
+                Bulan</button>
+            </div>
+          </div>
+        </form>
+        <?php endif; ?>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function changeRombelMapel(e) {
+  let mapel = document.getElementById('mapel');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'laporan': 'penilaian_mapel',
+        'id_rombel': e.target.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      data = data.data_mapel;
+      if (data.length <= 0) {
+        let option = document.createElement('option');
+        mapel.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        mapel.append(option);
+      } else {
+        mapel.innerText = '';
+        data.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_mapel);
+          option.innerText = e.nama_mapel;
+          mapel.append(option);
+        });
+
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+function changeRombelAdmin(e) {
+  let mapel = document.getElementById('mapel');
+  let siswa = document.getElementById('siswa');
+  let jenisNilai = document.getElementById('jenisNilai');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'laporan': 'penilaian_mapel',
+        'id_rombel': e.target.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      let dataMapel = data.data_mapel;
+      let dataSiswa = data.data_siswa;
+      let dataJenisNilai = data.data_jenisnilai;
+
+      if (dataMapel.length <= 0) {
+        let option = document.createElement('option');
+        mapel.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        mapel.append(option);
+      } else {
+        mapel.innerText = '';
+        dataMapel.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_mapel);
+          option.innerText = e.nama_mapel;
+          mapel.append(option);
+        });
+      }
+
+      if (dataSiswa.length <= 0) {
+        let option = document.createElement('option');
+        siswa.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        siswa.append(option);
+      } else {
+        siswa.innerText = '';
+        dataSiswa.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_siswa);
+          option.innerText = e.nama_siswa;
+          siswa.append(option);
+        });
+      }
+
+      if (dataJenisNilai.length <= 0) {
+        let option = document.createElement('option');
+        jenisnilai.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        jenisnilai.append(option);
+      } else {
+        jenisnilai.innerText = '';
+        dataJenisNilai.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_jenisnilai);
+          option.innerText = e.jenisnilai;
+          jenisnilai.append(option);
+        });
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+function changeRombelAbsensi(e) {
+  let mapel = document.getElementById('mapel2');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'absensi': 'absensi',
+        'id_rombel': e.target.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      data = data.data_mapel;
+      if (data.length <= 0) {
+        let option = document.createElement('option');
+        mapel.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        mapel.append(option);
+      } else {
+        mapel.innerText = '';
+        data.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_mapel);
+          option.innerText = e.nama_mapel;
+          mapel.append(option);
+        });
+
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+function changeRombelMapel(e) {
+  let mapel = document.getElementById('mapel');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'laporan': 'penilaian_mapel',
+        'id_rombel': e.target.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      let dataMapel = data.data_mapel;
+      let dataJenisNilai = data.data_jenisnilai;
+
+      if (dataMapel.length <= 0) {
+        let option = document.createElement('option');
+        mapel.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        mapel.append(option);
+      } else {
+        mapel.innerText = '';
+        dataMapel.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_mapel);
+          option.innerText = e.nama_mapel;
+          mapel.append(option);
+        });
+      }
+
+      if (dataJenisNilai.length <= 0) {
+        let option = document.createElement('option');
+        jenisnilai.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        jenisnilai.append(option);
+      } else {
+        jenisnilai.innerText = '';
+        dataJenisNilai.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_jenisnilai);
+          option.innerText = e.jenisnilai;
+          jenisnilai.append(option);
+        });
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+function changeMapel(e) {
+  let mapel = document.getElementById('mapel');
+  let rombel = document.getElementById('rombel');
+  let jenisnilai = document.getElementById('jenisnilai');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'laporan': 'penilaian_mapel_jenisnilai',
+        'id_mapel': mapel.value,
+        'id_rombel': rombel.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      let dataJenisNilai = data.data_jenisnilai;
+
+      if (dataJenisNilai.length <= 0) {
+        let option = document.createElement('option');
+        jenisnilai.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        jenisnilai.append(option);
+      } else {
+        jenisnilai.innerText = '';
+        dataJenisNilai.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_jenisnilai);
+          option.innerText = e.jenisnilai;
+          jenisnilai.append(option);
+        });
+      }
+    })
+    .catch(err => console.log(err));
+}
+
+function changeSiswaInWali(e) {
+  let mapel = document.getElementById('mapelWali');
+
+  fetch('./control/aksi_select.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        'laporan': 'penilaian_siswa_mapel',
+        'id_siswa': e.target.value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      let dataMapel = data.data_mapel;
+
+      if (dataMapel.length <= 0) {
+        let option = document.createElement('option');
+        mapel.innerText = '';
+        option.innerText = '-- Tidak ada data --';
+        mapel.append(option);
+      } else {
+        mapel.innerText = '';
+        dataMapel.forEach(function(e) {
+          let option = document.createElement('option');
+          option.setAttribute('value', e.id_mapel);
+          option.innerText = e.nama_mapel;
+          mapel.append(option);
+        });
+      }
+    })
+    .catch(err => console.log(err));
+}
+</script>
